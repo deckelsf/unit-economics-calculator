@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unit Economics Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #18181f;
+    --surface3: #1e1e28;
+    --border: #2a2a38;
+    --border2: #333345;
+    --text: #f0f0f8;
+    --text2: #9090a8;
+    --text3: #5a5a70;
+    --accent: #6c63ff;
+    --accent2: #8b84ff;
+    --accent-dim: rgba(108,99,255,0.12);
+    --green: #22d17a;
+    --green-dim: rgba(34,209,122,0.12);
+    --yellow: #f5c542;
+    --yellow-dim: rgba(245,197,66,0.12);
+    --red: #f0436a;
+    --red-dim: rgba(240,67,106,0.12);
+    --blue: #38b8f0;
+    --blue-dim: rgba(56,184,240,0.1);
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* Noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.5;
+  }
+
+  /* Header */
+  header {
+    position: relative;
+    z-index: 10;
+    padding: 40px 48px 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .header-left h1 {
+    font-family: var(--font-display);
+    font-size: clamp(26px, 3vw, 38px);
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+    color: var(--text);
+  }
+
+  .header-left h1 span {
+    color: var(--accent2);
+  }
+
+  .header-sub {
+    font-size: 13px;
+    color: var(--text3);
+    font-family: var(--font-mono);
+    margin-top: 6px;
+    letter-spacing: 0.5px;
+  }
+
+  .header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent-dim);
+    border: 1px solid rgba(108,99,255,0.25);
+    color: var(--accent2);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 100px;
+    margin-top: 10px;
+  }
+
+  .header-badge::before { content: '●'; font-size: 8px; }
+
+  /* Layout */
+  .app-shell {
+    position: relative;
+    z-index: 10;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 32px 48px 60px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+
+  @media (max-width: 1024px) {
+    .app-shell { grid-template-columns: 1fr; padding: 24px; }
+    header { padding: 32px 24px 0; }
+  }
+
+  /* Panels */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .panel-title {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text2);
+  }
+
+  .panel-body { padding: 24px; }
+
+  /* Scenario tabs */
+  .scenario-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    flex-wrap: wrap;
+  }
+
+  .tab-btn {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+
+  .tab-btn.active {
+    background: var(--accent-dim);
+    border-color: rgba(108,99,255,0.4);
+    color: var(--accent2);
+  }
+
+  .tab-btn:hover:not(.active) {
+    border-color: var(--border2);
+    color: var(--text);
+    background: var(--surface3);
+  }
+
+  /* Input groups */
+  .input-section {
+    margin-bottom: 24px;
+  }
+
+  .input-section-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 12px;
+  }
+
+  .input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .input-row {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .input-row label {
+    font-size: 12px;
+    color: var(--text2);
+    font-family: var(--font-mono);
+  }
+
+  .input-wrap {
+    position: relative;
+  }
+
+  .input-wrap .unit {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text3);
+    pointer-events: none;
+  }
+
+  .input-wrap .unit-right {
+    left: auto;
+    right: 12px;
+  }
+
+  .input-wrap input {
+    width: 100%;
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    padding: 9px 12px 9px 28px;
+    transition: border-color 0.15s;
+    outline: none;
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+
+  .input-wrap input::-webkit-outer-spin-button,
+  .input-wrap input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  .input-wrap input:focus {
+    border-color: var(--accent);
+    background: rgba(108,99,255,0.05);
+  }
+
+  .input-wrap.no-unit input { padding-left: 12px; }
+  .input-wrap.has-right input { padding-right: 28px; padding-left: 12px; }
+
+  /* Metric cards */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .metric-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    border-radius: 2px 2px 0 0;
+  }
+
+  .metric-card.health-green { border-color: rgba(34,209,122,0.25); }
+  .metric-card.health-green::before { background: var(--green); }
+  .metric-card.health-yellow { border-color: rgba(245,197,66,0.25); }
+  .metric-card.health-yellow::before { background: var(--yellow); }
+  .metric-card.health-red { border-color: rgba(240,67,106,0.25); }
+  .metric-card.health-red::before { background: var(--red); }
+
+  .metric-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+
+  .metric-value {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+  }
+
+  .metric-card.health-green .metric-value { color: var(--green); }
+  .metric-card.health-yellow .metric-value { color: var(--yellow); }
+  .metric-card.health-red .metric-value { color: var(--red); }
+
+  .health-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    padding: 3px 8px;
+    border-radius: 100px;
+  }
+
+  .health-badge.green { background: var(--green-dim); color: var(--green); }
+  .health-badge.yellow { background: var(--yellow-dim); color: var(--yellow); }
+  .health-badge.red { background: var(--red-dim); color: var(--red); }
+  .health-badge::before { content: '●'; font-size: 7px; }
+
+  /* Comparison panel */
+  .comparison-col { flex: 1; min-width: 0; }
+
+  .comparison-col-header {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .compare-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+    margin-bottom: 2px;
+  }
+
+  .compare-header-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    margin-bottom: 8px;
+    padding: 0 0 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .compare-header-row span {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+
+  .compare-cell {
+    padding: 10px 12px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+
+  .compare-cell.metric-name { color: var(--text2); font-size: 11px; }
+  .compare-cell.val-a { color: var(--blue); }
+  .compare-cell.val-b { color: var(--accent2); }
+
+  .compare-row:nth-child(odd) .compare-cell {
+    background: rgba(255,255,255,0.02);
+    border-radius: 4px;
+  }
+
+  /* Radar chart */
+  .radar-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px 0 8px;
+  }
+
+  canvas#radarChart {
+    max-width: 340px;
+    max-height: 340px;
+  }
+
+  /* Explainer accordion */
+  .explainer {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .explainer-toggle {
+    width: 100%;
+    background: var(--surface2);
+    border: none;
+    padding: 13px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    text-align: left;
+    transition: background 0.15s;
+  }
+
+  .explainer-toggle:hover { background: var(--surface3); }
+
+  .explainer-toggle .arrow {
+    color: var(--text3);
+    font-size: 10px;
+    transition: transform 0.2s;
+  }
+
+  .explainer-toggle.open .arrow { transform: rotate(180deg); }
+
+  .explainer-body {
+    display: none;
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.65;
+    border-top: 1px solid var(--border);
+  }
+
+  .explainer-body.open { display: block; }
+
+  .explainer-body .rec {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: var(--accent-dim);
+    border-left: 2px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    font-size: 12px;
+    color: var(--accent2);
+  }
+
+  .explainer-body .rec strong { color: var(--text); display: block; margin-bottom: 3px; font-size: 11px; letter-spacing: 0.5px; }
+
+  /* Full-width panels */
+  .full-col {
+    grid-column: 1 / -1;
+  }
+
+  /* Section divider */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 20px 0;
+  }
+
+  /* Responsive compare */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  /* Footer */
+  .app-footer {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    padding: 0 48px 40px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.5px;
+  }
+
+  .app-footer a { color: var(--text3); text-decoration: none; }
+  .app-footer a:hover { color: var(--accent2); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .panel { animation: fadeUp 0.4s ease both; }
+  .panel:nth-child(2) { animation-delay: 0.06s; }
+  .panel:nth-child(3) { animation-delay: 0.12s; }
+  .panel:nth-child(4) { animation-delay: 0.18s; }
+  .panel:nth-child(5) { animation-delay: 0.24s; }
+
+  .scenario-label-a { color: var(--blue); }
+  .scenario-label-b { color: var(--accent2); }
+
+  .legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+
+  select {
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 6px 10px;
+    outline: none;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>Unit <span>Economics</span><br>Calculator</h1>
+    <div class="header-sub">// SaaS Metrics Dashboard — v1.0</div>
+    <div class="header-badge">Generic SaaS Benchmarks</div>
+  </div>
+</header>
+
+<div class="app-shell">
+
+  <!-- INPUTS PANEL A -->
+  <div class="panel" id="inputPanelA">
+    <div class="panel-header">
+      <span class="panel-title">Inputs</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span class="scenario-label-a" style="font-family:var(--font-mono);font-size:11px;">▲ Scenario A</span>
+        <span class="scenario-label-b" style="font-family:var(--font-mono);font-size:11px;">◆ Scenario B</span>
+      </div>
+    </div>
+    <div class="scenario-tabs">
+      <button class="tab-btn active" onclick="switchScenario('A')">Scenario A</button>
+      <button class="tab-btn" onclick="switchScenario('B')">Scenario B</button>
+    </div>
+    <div class="panel-body">
+
+      <div class="input-section">
+        <div class="input-section-label">Revenue</div>
+        <div class="input-grid">
+          <div class="input-row">
+            <label>ARPU (monthly)</label>
+            <div class="input-wrap">
+              <span class="unit">$</span>
+              <input type="number" id="arpu" value="120" oninput="calc()">
+            </div>
+          </div>
+          <div class="input-row">
+            <label>Total Customers</label>
+            <div class="input-wrap no-unit">
+              <input type="number" id="customers" value="500" oninput="calc()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-section">
+        <div class="input-section-label">Acquisition</div>
+        <div class="input-grid">
+          <div class="input-row">
+            <label>Sales &amp; Mktg Spend / mo</label>
+            <div class="input-wrap">
+              <span class="unit">$</span>
+              <input type="number" id="smSpend" value="30000" oninput="calc()">
+            </div>
+          </div>
+          <div class="input-row">
+            <label>New Customers / mo</label>
+            <div class="input-wrap no-unit">
+              <input type="number" id="newCusts" value="40" oninput="calc()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-section">
+        <div class="input-section-label">Retention &amp; Margin</div>
+        <div class="input-grid">
+          <div class="input-row">
+            <label>Monthly Churn Rate</label>
+            <div class="input-wrap has-right">
+              <input type="number" id="churn" value="2.5" step="0.1" oninput="calc()">
+              <span class="unit unit-right">%</span>
+            </div>
+          </div>
+          <div class="input-row">
+            <label>Gross Margin</label>
+            <div class="input-wrap has-right">
+              <input type="number" id="gm" value="72" step="0.1" oninput="calc()">
+              <span class="unit unit-right">%</span>
+            </div>
+          </div>
+          <div class="input-row">
+            <label>Expansion MRR / mo</label>
+            <div class="input-wrap">
+              <span class="unit">$</span>
+              <input type="number" id="expansion" value="2000" oninput="calc()">
+            </div>
+          </div>
+          <div class="input-row">
+            <label>Churned MRR / mo</label>
+            <div class="input-wrap">
+              <span class="unit">$</span>
+              <input type="number" id="churnedMrr" value="3600" oninput="calc()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RESULTS PANEL -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Results</span>
+      <span id="scenarioTag" style="font-family:var(--font-mono);font-size:11px;color:var(--blue);">▲ Scenario A</span>
+    </div>
+    <div class="panel-body">
+      <div class="metrics-grid" id="metricsGrid">
+        <!-- populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- RADAR CHART -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Health Radar</span>
+      <div style="display:flex;gap:12px;font-family:var(--font-mono);font-size:11px;">
+        <span><span class="legend-dot" style="background:var(--blue);"></span>Scenario A</span>
+        <span><span class="legend-dot" style="background:var(--accent2);"></span>Scenario B</span>
+      </div>
+    </div>
+    <div class="radar-wrap">
+      <canvas id="radarChart" width="340" height="340"></canvas>
+    </div>
+  </div>
+
+  <!-- COMPARISON TABLE -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Side-by-Side Comparison</span>
+    </div>
+    <div class="panel-body">
+      <div class="compare-header-row">
+        <span>Metric</span>
+        <span class="scenario-label-a">▲ Scenario A</span>
+        <span class="scenario-label-b">◆ Scenario B</span>
+      </div>
+      <div id="compareTable"></div>
+    </div>
+  </div>
+
+  <!-- EXPLAINERS + RECOMMENDATIONS -->
+  <div class="panel full-col">
+    <div class="panel-header">
+      <span class="panel-title">Metric Explainers &amp; Recommendations</span>
+    </div>
+    <div class="panel-body" id="explainers"></div>
+  </div>
+
+</div>
+
+<div class="app-footer">
+  Built by a PM at Workstream · <a href="https://github.com" target="_blank">github.com</a> · Generic SaaS Benchmarks
+</div>
+
+<!-- Chart.js via CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────
+const scenarios = {
+  A: { arpu: 120, customers: 500, smSpend: 30000, newCusts: 40, churn: 2.5, gm: 72, expansion: 2000, churnedMrr: 3600 },
+  B: { arpu: 90,  customers: 300, smSpend: 25000, newCusts: 25, churn: 4.0, gm: 65, expansion: 800,  churnedMrr: 3600 }
+};
+let activeScenario = 'A';
+
+// ─── BENCHMARKS ──────────────────────────────────────────────
+const benchmarks = {
+  ltvcac:    { green: 3,    yellow: 1,    unit: 'x',   label: 'LTV:CAC',          fmt: v => v.toFixed(1) + 'x',  higher: true },
+  payback:   { green: 12,   yellow: 24,   unit: 'mo',  label: 'CAC Payback',      fmt: v => v.toFixed(1) + ' mo', higher: false },
+  grossMargin:{ green: 70,  yellow: 50,   unit: '%',   label: 'Gross Margin',     fmt: v => v.toFixed(1) + '%',  higher: true },
+  churn:     { green: 2,    yellow: 5,    unit: '%',   label: 'Monthly Churn',    fmt: v => v.toFixed(2) + '%',  higher: false },
+  mrr:       { green: 50000,yellow: 10000,unit: '$',   label: 'MRR',              fmt: v => '$' + fmtK(v),       higher: true },
+  nrr:       { green: 100,  yellow: 90,   unit: '%',   label: 'NRR',              fmt: v => v.toFixed(1) + '%',  higher: true }
+};
+
+function fmtK(v) {
+  if (v >= 1000000) return (v/1000000).toFixed(1) + 'M';
+  if (v >= 1000) return (v/1000).toFixed(1) + 'K';
+  return v.toFixed(0);
+}
+
+function healthStatus(key, value) {
+  const b = benchmarks[key];
+  if (b.higher) {
+    if (value >= b.green) return 'green';
+    if (value >= b.yellow) return 'yellow';
+    return 'red';
+  } else {
+    if (value <= b.green) return 'green';
+    if (value <= b.yellow) return 'yellow';
+    return 'red';
+  }
+}
+
+function healthLabel(status) {
+  return { green: 'Strong', yellow: 'Watch', red: 'At Risk' }[status];
+}
+
+// ─── COMPUTE ─────────────────────────────────────────────────
+function compute(s) {
+  const mrr = s.arpu * s.customers;
+  const cac = s.newCusts > 0 ? s.smSpend / s.newCusts : 0;
+  const avgLifeMonths = s.churn > 0 ? 100 / s.churn : 0;
+  const ltv = s.arpu * (s.gm / 100) * avgLifeMonths;
+  const ltvcac = cac > 0 ? ltv / cac : 0;
+  const payback = (s.arpu * (s.gm / 100)) > 0 ? cac / (s.arpu * (s.gm / 100)) : 0;
+  const startingMrr = mrr;
+  const nrr = startingMrr > 0 ? ((startingMrr + s.expansion - s.churnedMrr) / startingMrr) * 100 : 0;
+  return { ltvcac, payback, grossMargin: s.gm, churn: s.churn, mrr, nrr, cac, ltv };
+}
+
+// ─── RADAR SCORE (0–100) ─────────────────────────────────────
+function radarScore(key, value) {
+  const b = benchmarks[key];
+  if (b.higher) {
+    const max = b.green * 1.5;
+    return Math.min(100, Math.max(0, (value / max) * 100));
+  } else {
+    const worst = b.yellow * 2;
+    return Math.min(100, Math.max(0, (1 - (value - b.green) / (worst - b.green)) * 100));
+  }
+}
+
+// ─── RENDER METRICS ──────────────────────────────────────────
+function renderMetrics(results, scenarioKey) {
+  const grid = document.getElementById('metricsGrid');
+  const tag  = document.getElementById('scenarioTag');
+  tag.textContent = scenarioKey === 'A' ? '▲ Scenario A' : '◆ Scenario B';
+  tag.style.color = scenarioKey === 'A' ? 'var(--blue)' : 'var(--accent2)';
+
+  const items = [
+    { key: 'ltvcac',      val: results.ltvcac },
+    { key: 'payback',     val: results.payback },
+    { key: 'grossMargin', val: results.grossMargin },
+    { key: 'churn',       val: results.churn },
+    { key: 'mrr',         val: results.mrr },
+    { key: 'nrr',         val: results.nrr }
+  ];
+
+  grid.innerHTML = items.map(({ key, val }) => {
+    const h = healthStatus(key, val);
+    const b = benchmarks[key];
+    return `
+      <div class="metric-card health-${h}">
+        <div class="metric-label">${b.label}</div>
+        <div class="metric-value">${b.fmt(val)}</div>
+        <div class="health-badge ${h}">${healthLabel(h)}</div>
+      </div>`;
+  }).join('');
+}
+
+// ─── COMPARE TABLE ────────────────────────────────────────────
+function renderCompare(rA, rB) {
+  const rows = [
+    ['ltvcac', rA.ltvcac, rB.ltvcac],
+    ['payback', rA.payback, rB.payback],
+    ['grossMargin', rA.grossMargin, rB.grossMargin],
+    ['churn', rA.churn, rB.churn],
+    ['mrr', rA.mrr, rB.mrr],
+    ['nrr', rA.nrr, rB.nrr]
+  ];
+  document.getElementById('compareTable').innerHTML = rows.map(([key, a, b]) => {
+    const bm = benchmarks[key];
+    return `<div class="compare-row">
+      <div class="compare-cell metric-name">${bm.label}</div>
+      <div class="compare-cell val-a">${bm.fmt(a)}</div>
+      <div class="compare-cell val-b">${bm.fmt(b)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── RADAR CHART ─────────────────────────────────────────────
+let radarChartInstance = null;
+
+function renderRadar(rA, rB) {
+  const keys = ['ltvcac', 'payback', 'grossMargin', 'churn', 'mrr', 'nrr'];
+  const labels = keys.map(k => benchmarks[k].label);
+  const dataA = keys.map(k => radarScore(k, rA[k]));
+  const dataB = keys.map(k => radarScore(k, rB[k]));
+
+  const ctx = document.getElementById('radarChart').getContext('2d');
+  if (radarChartInstance) radarChartInstance.destroy();
+
+  radarChartInstance = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Scenario A',
+          data: dataA,
+          borderColor: 'rgba(56,184,240,0.9)',
+          backgroundColor: 'rgba(56,184,240,0.1)',
+          pointBackgroundColor: 'rgba(56,184,240,1)',
+          borderWidth: 2,
+          pointRadius: 4
+        },
+        {
+          label: 'Scenario B',
+          data: dataB,
+          borderColor: 'rgba(139,132,255,0.9)',
+          backgroundColor: 'rgba(139,132,255,0.1)',
+          pointBackgroundColor: 'rgba(139,132,255,1)',
+          borderWidth: 2,
+          pointRadius: 4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        r: {
+          min: 0, max: 100,
+          ticks: { display: false, stepSize: 25 },
+          grid: { color: 'rgba(255,255,255,0.06)' },
+          angleLines: { color: 'rgba(255,255,255,0.06)' },
+          pointLabels: { color: '#9090a8', font: { family: 'DM Mono', size: 10 } }
+        }
+      },
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+}
+
+// ─── EXPLAINERS ───────────────────────────────────────────────
+const explainerData = [
+  {
+    key: 'ltvcac',
+    title: 'LTV:CAC Ratio',
+    desc: 'Compares lifetime value of a customer to the cost of acquiring them. A ratio above 3x suggests efficient growth — you\'re generating strong returns on acquisition spend.',
+    rec: (r) => {
+      const v = r.ltvcac;
+      if (v >= 3) return { msg: `Your LTV:CAC of ${v.toFixed(1)}x is healthy. Consider investing more in acquisition channels — you have margin to grow.`, good: true };
+      if (v >= 1) return { msg: `LTV:CAC of ${v.toFixed(1)}x is marginal. Focus on reducing CAC (improve conversion funnel) or increasing LTV (reduce churn, expand ARPU).`, good: false };
+      return { msg: `LTV:CAC below 1x means you\'re spending more to acquire customers than they\'re worth. Halt aggressive spend until churn and CAC improve.`, good: false };
+    }
+  },
+  {
+    key: 'payback',
+    title: 'CAC Payback Period',
+    desc: 'How many months to recover the cost of acquiring a customer through gross-margin-adjusted revenue. Under 12 months is excellent for SaaS; 12–24 is acceptable; 24+ signals risk.',
+    rec: (r) => {
+      const v = r.payback;
+      if (v <= 12) return { msg: `${v.toFixed(1)} month payback is excellent. Your capital efficiency is strong and you can reinvest quickly.`, good: true };
+      if (v <= 24) return { msg: `${v.toFixed(1)} months is workable but watch this metric. Improving gross margin or lowering CAC will accelerate payback.`, good: false };
+      return { msg: `${v.toFixed(1)} month payback is a red flag. Each new customer ties up capital for 2+ years. Revisit pricing, acquisition mix, and gross margin.`, good: false };
+    }
+  },
+  {
+    key: 'grossMargin',
+    title: 'Gross Margin %',
+    desc: 'Revenue minus cost of goods sold (COGS), divided by revenue. For SaaS, 70%+ is considered healthy. This directly impacts LTV and payback calculations.',
+    rec: (r) => {
+      const v = r.grossMargin;
+      if (v >= 70) return { msg: `${v.toFixed(1)}% gross margin is solid. This gives you strong unit economics leverage. Protect it as you scale COGS.`, good: true };
+      if (v >= 50) return { msg: `${v.toFixed(1)}% is below SaaS benchmark. Audit your COGS — hosting, support, implementation costs. Automation can help here.`, good: false };
+      return { msg: `${v.toFixed(1)}% gross margin is low for SaaS. This compresses LTV and delays payback. Reducing delivery costs should be a priority.`, good: false };
+    }
+  },
+  {
+    key: 'churn',
+    title: 'Monthly Churn Rate',
+    desc: 'Percentage of customers lost each month. At 2% monthly, you lose ~22% of customers annually. Churn is the silent killer of SaaS — small improvements compound over time.',
+    rec: (r) => {
+      const v = r.churn;
+      if (v <= 2) return { msg: `${v.toFixed(2)}% monthly churn is excellent. Your retention moat is working. Keep monitoring cohort health.`, good: true };
+      if (v <= 5) return { msg: `${v.toFixed(2)}% monthly churn is a watch zone. Build out customer success, onboarding quality, and product stickiness to drive this down.`, good: false };
+      return { msg: `${v.toFixed(2)}% monthly churn is high — this destroys LTV. Investigate time-to-value, ICP fit, and 30/60/90 day onboarding experience.`, good: false };
+    }
+  },
+  {
+    key: 'mrr',
+    title: 'MRR (Monthly Recurring Revenue)',
+    desc: 'Predictable monthly revenue from subscriptions. The foundation of SaaS forecasting. MRR growth rate matters more than absolute number at early stages.',
+    rec: (r) => {
+      const v = r.mrr;
+      if (v >= 50000) return { msg: `$${fmtK(v)} MRR is a meaningful base. Focus on NRR >100% to grow revenue without pure headcount-driven acquisition.`, good: true };
+      if (v >= 10000) return { msg: `$${fmtK(v)} MRR — early traction. Focus on repeatability of acquisition and establishing strong ICP before scaling spend.`, good: false };
+      return { msg: `$${fmtK(v)} MRR is early stage. Validate product-market fit signals and prioritize qualitative learning over growth metrics right now.`, good: false };
+    }
+  },
+  {
+    key: 'nrr',
+    title: 'Net Revenue Retention (NRR)',
+    desc: 'Measures revenue retained and expanded from existing customers, net of churn and contraction. NRR >100% means your existing customer base is growing without any new logos.',
+    rec: (r) => {
+      const v = r.nrr;
+      if (v >= 100) return { msg: `${v.toFixed(1)}% NRR — you\'re growing organically from your existing base. This is the gold standard for efficient SaaS growth.`, good: true };
+      if (v >= 90)  return { msg: `${v.toFixed(1)}% NRR. Close to neutral. Increase expansion revenue via upsell/cross-sell motions or seat-based pricing.`, good: false };
+      return { msg: `${v.toFixed(1)}% NRR means you\'re shrinking from existing customers. Churn and contraction is exceeding expansion. Fix retention first.`, good: false };
+    }
+  }
+];
+
+function renderExplainers(results) {
+  const container = document.getElementById('explainers');
+  container.innerHTML = explainerData.map((e, i) => {
+    const rec = e.rec(results);
+    const h = healthStatus(e.key, results[e.key]);
+    return `
+      <div class="explainer">
+        <button class="explainer-toggle" onclick="toggleExplainer(${i})">
+          <span style="display:flex;align-items:center;gap:10px;">
+            <span class="health-badge ${h}" style="font-size:10px;">${healthLabel(h)}</span>
+            <span>${e.title}</span>
+          </span>
+          <span class="arrow" id="arrow-${i}">▼</span>
+        </button>
+        <div class="explainer-body" id="exp-${i}">
+          <p>${e.desc}</p>
+          <div class="rec">
+            <strong>${rec.good ? '✓ Recommendation' : '⚠ Action Needed'}</strong>
+            ${rec.msg}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleExplainer(i) {
+  const body = document.getElementById(`exp-${i}`);
+  const btn  = body.previousElementSibling;
+  const arrow = document.getElementById(`arrow-${i}`);
+  const open = body.classList.toggle('open');
+  btn.classList.toggle('open', open);
+}
+
+// ─── INPUTS FROM ACTIVE SCENARIO ────────────────────────────
+function readInputs() {
+  return {
+    arpu:       parseFloat(document.getElementById('arpu').value) || 0,
+    customers:  parseFloat(document.getElementById('customers').value) || 0,
+    smSpend:    parseFloat(document.getElementById('smSpend').value) || 0,
+    newCusts:   parseFloat(document.getElementById('newCusts').value) || 0,
+    churn:      parseFloat(document.getElementById('churn').value) || 0,
+    gm:         parseFloat(document.getElementById('gm').value) || 0,
+    expansion:  parseFloat(document.getElementById('expansion').value) || 0,
+    churnedMrr: parseFloat(document.getElementById('churnedMrr').value) || 0
+  };
+}
+
+function writeInputs(s) {
+  document.getElementById('arpu').value = s.arpu;
+  document.getElementById('customers').value = s.customers;
+  document.getElementById('smSpend').value = s.smSpend;
+  document.getElementById('newCusts').value = s.newCusts;
+  document.getElementById('churn').value = s.churn;
+  document.getElementById('gm').value = s.gm;
+  document.getElementById('expansion').value = s.expansion;
+  document.getElementById('churnedMrr').value = s.churnedMrr;
+}
+
+function switchScenario(key) {
+  // save current
+  scenarios[activeScenario] = readInputs();
+  activeScenario = key;
+  writeInputs(scenarios[activeScenario]);
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', (i === 0 && key === 'A') || (i === 1 && key === 'B'));
+  });
+  calc();
+}
+
+// ─── MAIN CALC ────────────────────────────────────────────────
+function calc() {
+  scenarios[activeScenario] = readInputs();
+  const rA = compute(scenarios.A);
+  const rB = compute(scenarios.B);
+  const rActive = activeScenario === 'A' ? rA : rB;
+
+  renderMetrics(rActive, activeScenario);
+  renderCompare(rA, rB);
+  renderRadar(rA, rB);
+  renderExplainers(rActive);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────
+writeInputs(scenarios.A);
+calc();
+</script>
+</body>
+</html>
