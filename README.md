@@ -4,7 +4,7 @@
 
 An interactive SaaS unit economics calculator with side-by-side scenario comparison, health score benchmarks, and metric explainers. Built as a single-file vanilla JS app — no build tools, no dependencies beyond Chart.js.
 
-![Unit Economics Calculator Screenshot](assets/screenshot.png)
+![Unit Economics Calculator Screenshot](UnitEconomicsCalculatorScreenshot.png)
 
 ---
 
